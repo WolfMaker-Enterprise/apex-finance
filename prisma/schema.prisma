@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * Usuários – mantém seu modelo exatamente como enviado
+ */
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leads     Lead[]
+
+  @@map("user")
+}
+
+/**
+ * Estágios do funil (igual ao da imagem):
+ * - LEAD (Lead Capturado)
+ * - MQL
+ * - ANALISE_MQL (Análise de MQL)
+ * - SQL
+ * - REUNIAO (Reunião agendada)
+ */
+enum Stage {
+  LEAD
+  MQL
+  ANALISE_MQL
+  SQL
+  REUNIAO
+}
+
+/**
+ * Leads do CRM
+ */
+model Lead {
+  id        Int      @id @default(autoincrement())
+  name      String
+  origin    String?          // Site, Anúncio, Indicação, etc.
+  value     Decimal?         // Valor da oportunidade (R$)
+  stage     Stage   @default(LEAD)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Dono / vendedor (opcional)
+  ownerId   Int?
+  owner     User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@index([stage])
+  @@index([ownerId])
+  @@map("lead")
+}
