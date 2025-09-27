@@ -58,7 +58,7 @@ model Lead {
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
-  // Dono / Vendedor Responsável (opcional)
+  // Dono / Vendedor Responsável 
   ownerId    Int?
   owner      User?      @relation(fields: [ownerId], references: [id], onDelete: SetNull)
 
