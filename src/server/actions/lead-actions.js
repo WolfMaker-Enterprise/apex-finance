@@ -30,10 +30,11 @@ function stageOrDefault(v) {
 
 // ----------------- Ações -----------------
 export async function listLeads() {
-  return prisma.lead.findMany({
+  const leads = await prisma.lead.findMany({
     orderBy: [{ stage: "asc" }, { createdAt: "desc" }],
     include: { owner: { select: { id: true, name: true, email: true } } },
   });
+  return leads.map(serializeLead); //Retorna dados serializado, estava dando erro ao carregar a página
 }
 
 /**
@@ -64,6 +65,25 @@ export async function createLead(payload) {
 
   const lead = await prisma.lead.create({ data });
   return { ok: true, lead };
+}
+
+function serializeLead(lead) { //Serializa os dados que estavam dando erro ao carregar a página
+  return {
+    id: lead.id,
+    name: lead.name,
+    company: lead.company,
+    email: lead.email,
+    phone: lead.phone,
+    jobTitle: lead.jobTitle,
+    origin: lead.origin,
+    score: lead.score,
+    notes: lead.notes,
+    value: lead.value?.toNumber?.() ?? null, // ✅ Decimal → number
+    ownerId: lead.ownerId,
+    stage: lead.stage,
+    createdAt: lead.createdAt.toISOString(),  // ✅ Date → string
+    updatedAt: lead.updatedAt.toISOString(),  // ✅ Date → string
+  };
 }
 
 export async function moveLead(leadId, nextStage) {
