@@ -20,7 +20,6 @@ function toDecimal(v) {
   if (v === null || v === undefined || v === "") return null;
   const s = String(v).replace(",", ".").trim();
   const n = Number(s);
-  // Prisma aceita string para Decimal; guardamos como string
   return Number.isFinite(n) ? String(n) : null;
 }
 function stageOrDefault(v) {
@@ -63,11 +62,22 @@ export async function createLead(payload) {
 
   if (!data.name) return { ok: false, error: "Nome é obrigatório." };
 
+  if (data.ownerId) {
+    const userExists = await prisma.user.findUnique({
+      where: { id: data.ownerId },
+    });
+
+    if (!userExists) {
+      return { ok: false, error: "Vendedor selecionado não existe." };
+    }
+  }
+
   const lead = await prisma.lead.create({ data });
   return { ok: true, lead };
 }
 
-function serializeLead(lead) { //Serializa os dados que estavam dando erro ao carregar a página
+function serializeLead(lead) {
+  //Serializa os dados que estavam dando erro ao carregar a página
   return {
     id: lead.id,
     name: lead.name,
@@ -81,8 +91,8 @@ function serializeLead(lead) { //Serializa os dados que estavam dando erro ao ca
     value: lead.value?.toNumber?.() ?? null, // ✅ Decimal → number
     ownerId: lead.ownerId,
     stage: lead.stage,
-    createdAt: lead.createdAt.toISOString(),  // ✅ Date → string
-    updatedAt: lead.updatedAt.toISOString(),  // ✅ Date → string
+    createdAt: lead.createdAt.toISOString(), // ✅ Date → string
+    updatedAt: lead.updatedAt.toISOString(), // ✅ Date → string
   };
 }
 

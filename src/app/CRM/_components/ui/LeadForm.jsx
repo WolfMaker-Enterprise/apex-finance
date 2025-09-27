@@ -1,7 +1,7 @@
+"use client";
 
-// app/components/LeadForm.tsx
 import { createLead } from "@/server/actions/lead-actions";
-// import { SubmitButtons } from "./SubmitButtons";
+import { getUsers } from "@/server/actions/user-actions";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Plus } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useFormStatus } from "react-dom";
 import { SubmitButtons } from "./LeadButton";
+import { useState, useTransition, useEffect } from "react";
 
 // function SubmitButtons() { Este botão foi inserido dentro de ./LeadButton.jsx
 //     const { pending } = useFormStatus();
@@ -35,8 +36,58 @@ import { SubmitButtons } from "./LeadButton";
 // }
 
 export function LeadForm() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const usersList = await getUsers();
+        setUsers(usersList);
+      } catch (error) {
+        console.error("Erro ao carregar usuários:", error);
+      }
+    };
+
+    if (isOpen) {
+      loadUsers();
+    }
+  }, [isOpen]);
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+
+    startTransition(async () => {
+      try {
+        console.log("Enviando formData:", Object.fromEntries(formData));
+        const result = await createLead(formData);
+        console.log("Resultado da createLead:", result);
+
+        if (result && result.ok) {
+          setMessage("Lead criado com sucesso!");
+          setIsError(false);
+          // Limpar o formulário
+          event.target.reset();
+          // Fechar o dialog após 2 segundos
+          setTimeout(() => {
+            setIsOpen(false);
+            setMessage("");
+          }, 1000);
+        }
+      } catch (error) {
+        console.error("Erro completo:", error);
+        setMessage(`Erro inesperado ao criar lead: ${error.message}`);
+        setIsError(true);
+      }
+    });
+  };
+
   return (
-    <form action={createLead}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">
           Novo lead <Plus size={16} weight="bold" />
@@ -46,12 +97,11 @@ export function LeadForm() {
       <DialogContent className="sm:w-[90%] w-[60%] sm:h-[90%] h-[60%]">
         <DialogHeader className="max-h-max">
           <DialogTitle>Novo Lead</DialogTitle>
-          <DialogDescription>
-            Preencha os dados do novo lead.
-          </DialogDescription>
+          <DialogDescription>Preencha os dados do novo lead.</DialogDescription>
         </DialogHeader>
 
-        {<div className="max-h-max">
+        <form onSubmit={handleSubmit}>
+          <div className="max-h-max">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="name-1">Nome</Label>
@@ -99,8 +149,15 @@ export function LeadForm() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="ownerId-1">Vendedor Responsável (ID)</Label>
-                <Input id="ownerId-1" name="ownerId" type="number" min={1} />
+                <Label htmlFor="ownerId-1">Vendedor Responsável</Label>
+                <select id="ownerId-1" name="ownerId">
+                  <option value="">Selecione um vendedor (opcional)</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} ({user.email})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="md:col-span-2 flex flex-col gap-2">
@@ -128,12 +185,23 @@ export function LeadForm() {
                 </select>
               </div> */}
             </div>
-          </div>}
+          </div>
 
-        <DialogFooter className="max-h-max">
-          <SubmitButtons />
-        </DialogFooter>
+          <DialogFooter className="max-h-max gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={isPending}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-    </form>
+    </Dialog>
   );
 }
