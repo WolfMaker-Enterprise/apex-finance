@@ -278,41 +278,6 @@ export default function CRMPage() {
             </div>
           </section>
 
-          <form
-            onSubmit={handleCreate}
-            className="flex flex-wrap items-end gap-2 rounded-xl border border-dashed border-slate-300 bg-white p-3"
-          >
-            <div className="flex flex-col">
-              <label className="text-xs text-slate-500">Nome</label>
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-xs text-slate-500">Origem</label>
-              <input
-                value={form.origin}
-                onChange={(e) => setForm({ ...form, origin: e.target.value })}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-xs text-slate-500">Valor (R$)</label>
-              <input
-                type="number"
-                value={form.value}
-                onChange={(e) => setForm({ ...form, value: e.target.value })}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-            <button className="ml-auto rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-              Adicionar lead
-            </button>
-          </form>
-
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-5">
             {STAGES.map((col) => (
               <div
