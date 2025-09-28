@@ -12,28 +12,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Plus } from "@phosphor-icons/react";
-import { Input } from "@/components/ui/input";
+import { Input,  Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useFormStatus } from "react-dom";
 import { SubmitButtons } from "./LeadButton";
 import { useState, useTransition, useEffect } from "react";
-
-// function SubmitButtons() { Este botão foi inserido dentro de ./LeadButton.jsx
-//     const { pending } = useFormStatus();
-//     return (
-//         <>
-//       <DialogClose asChild>
-//         <Button type="button" variant="outline" disabled={pending}>
-//           Cancelar
-//         </Button>
-//       </DialogClose>
-//       <Button type="submit" disabled={pending}>
-//         {pending ? "Salvando..." : "Salvar"}
-//       </Button>
-//     </>
-//   );
-// }
 
 export function LeadForm() {
   const [isOpen, setIsOpen] = useState(false);
@@ -150,14 +134,14 @@ export function LeadForm() {
 
               <div className="grid gap-2">
                 <Label htmlFor="ownerId-1">Vendedor Responsável</Label>
-                <select id="ownerId-1" name="ownerId">
-                  <option value="">Selecione um vendedor (opcional)</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} ({user.email})
-                    </option>
-                  ))}
-                </select>
+                <Select id="ownerId-1" name="ownerId">
+                <option value="">Selecione um vendedor (opcional)</option>
+                    {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                    {user.name} ({user.email})
+                </option>
+                    ))}
+                </Select>
               </div>
 
               <div className="md:col-span-2 flex flex-col gap-2">

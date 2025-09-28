@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useDrag } from "react-dnd";
+import { useDrop } from "react-dnd"
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 import {
   listLeads,
   createLead,
@@ -23,6 +27,7 @@ import {
   CaretDown,
 } from "@phosphor-icons/react";
 import Client from "./_components/ui/Client";
+import StageColumn from "./_components/ui/StageColumn";
 
 const STAGES = [
   { key: "LEAD", label: "Lead Capturado", color: "border-blue-500" },
@@ -52,17 +57,33 @@ function MetricCard({ icon: Icon, title, subtitle, value }) {
   );
 }
 
-function LeadCard({ lead, onMove, onDelete }) {
+export function LeadCard({ lead, onMove, onDelete }) {
+  const [{ isDragging }, drag] = useDrag({
+    type: "LEAD_CARD",
+    item: { id: lead.id, stage: lead.stage },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div
+      ref={drag}
+      className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm${isDragging ? " opacity-50" : ""}`}
+      style={{ cursor: "move" }}
+    >
       <div className="mb-2 flex items-start justify-between">
         <div className="font-medium text-slate-800">{lead.name}</div>
-        <button className="text-slate-400 hover:text-slate-600">
-          <DotsThree size={18} weight="bold" />
+        <button className="text-slate-400 hover:text-slate-600"
+        onClick={() => {
+          alert(`Ações para o lead: ${lead.name}`);
+        }}
+        >
+          <DotsThree size={18} weight="bold" />Editar
         </button>
       </div>
 
-      <div className="mb-3 text-xs text-slate-500">02 de Set</div>
+      <div className="mb-3 text-xs text-slate-500">{new Date(lead.updatedAt).getDate() + " deVERIFICAR ESSE CAMPO!!! " + new Date(lead.updatedAt).toLocaleDateString("pt-BR", { month: "long" }).replace(/^./, str => str.toUpperCase())}</div>
 
       <div className="flex items-center gap-2">
         <button
@@ -87,7 +108,7 @@ function LeadCard({ lead, onMove, onDelete }) {
 
       {/* ações rápidas: mover ou deletar */}
       <div className="mt-3 flex flex-wrap gap-2">
-        {STAGES.filter((s) => s.key !== lead.stage).map((s) => (
+        {/* {STAGES.filter((s) => s.key !== lead.stage).map((s) => (
           <button
             key={s.key}
             onClick={() => onMove(lead.id, s.key)}
@@ -95,7 +116,7 @@ function LeadCard({ lead, onMove, onDelete }) {
           >
             → {s.label}
           </button>
-        ))}
+        ))} */}
         <button
           onClick={() => onDelete(lead.id)}
           className="text-xs text-red-500 hover:underline"
@@ -151,8 +172,9 @@ export default function CRMPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA] text-slate-900">
-      <div className="mx-auto grid max-w-[1400px] grid-cols-[260px_1fr] gap-6 px-4 py-6">
+    <DndProvider backend={HTML5Backend}>
+      <div className="min-h-screen bg-[#F7F8FA] text-slate-900">
+        <div className="mx-auto grid max-w-[1400px] grid-cols-[260px_1fr] gap-6 px-4 py-6">
         <aside className="h-[calc(100vh-48px)] sticky top-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-6 px-2 text-2xl font-extrabold tracking-tight text-[#2A6CF6]">
             Nex <span className="text-slate-800">Tools</span>
@@ -279,44 +301,20 @@ export default function CRMPage() {
           </section>
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-            {STAGES.map((col) => (
-              <div
-                key={col.key}
-                className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
-              >
-                <div
-                  className={`mb-3 border-b-2 ${col.color} pb-2 text-sm font-semibold text-slate-700`}
-                >
-                  {col.label}
-                </div>
-
-                <div className="space-y-3">
-                  {(grouped[col.key] || []).map((lead) => (
-                    <LeadCard
-                      key={lead.id}
-                      lead={lead}
-                      onMove={async (id, stage) => {
-                        await moveLead(id, stage);
-                        await refresh();
-                      }}
-                      onDelete={async (id) => {
-                        await deleteLead(id);
-                        await refresh();
-                      }}
-                    />
-                  ))}
-
-                  {grouped[col.key]?.length === 0 && (
-                    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-xs text-slate-400">
-                      Sem cards
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </section>
+          {STAGES.map((col) => (
+            <StageColumn
+              key={col.key}
+              col={col}
+              leads={grouped[col.key]}
+              moveLead={moveLead}
+              refresh={refresh}
+              deleteLead={deleteLead}
+            />
+          ))}
+        </section>
         </main>
+        </div>
       </div>
-    </div>
+    </DndProvider>
   );
 }
