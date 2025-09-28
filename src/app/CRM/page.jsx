@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useDrag } from "react-dnd";
+import { useDrop } from "react-dnd";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 import {
   listLeads,
   createLead,
@@ -23,6 +27,7 @@ import {
   CaretDown,
 } from "@phosphor-icons/react";
 import Client from "./_components/ui/Client";
+import StageColumn from "./_components/ui/StageColumn";
 
 const STAGES = [
   { key: "LEAD", label: "Lead Capturado", color: "border-blue-500" },
@@ -52,42 +57,76 @@ function MetricCard({ icon: Icon, title, subtitle, value }) {
   );
 }
 
-function LeadCard({ lead, onMove, onDelete }) {
+export function LeadCard({ lead, onDelete }) {
+  const [{ isDragging }, drag] = useDrag({
+    type: "LEAD_CARD",
+    item: { id: lead.id, stage: lead.stage },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-2 flex items-start justify-between">
-        <div className="font-medium text-slate-800">{lead.name}</div>
-        <button className="text-slate-400 hover:text-slate-600">
+    <div
+      ref={drag}
+      className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm${
+        isDragging ? " opacity-50" : ""
+      }`}
+      style={{ cursor: "move" }}
+    >
+      <div className=" mb-2 flex items-start justify-between">
+        <div className="font-medium text-[15px] text-slate-800">
+          {(() => {
+            const parts = lead.name.trim().split(" ");
+            return parts.length > 1
+              ? `${parts[0]} ${parts[parts.length - 1]}`
+              : parts[0];
+          })()}
+                  
+        </div>
+        <button
+          className="text-slate-400 hover:text-slate-600"
+          onClick={() => {
+            alert(`Ações para o lead: ${lead.name}`);
+          }}
+        >
           <DotsThree size={18} weight="bold" />
         </button>
       </div>
 
-      <div className="mb-3 text-xs text-slate-500">02 de Set</div>
+      <div className="mb-3 text-xs text-slate-500">
+        {new Date(lead.updatedAt).getDate() +
+          " deVERIFICAR ESSE CAMPO!!! " +
+          new Date(lead.updatedAt)
+            .toLocaleDateString("pt-BR", { month: "long" })
+            .replace(/^./, (str) => str.toUpperCase())}
+      </div>
 
       <div className="flex items-center gap-2">
         <button
           className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 hover:bg-slate-50"
           title="Agendar"
         >
-          <CalendarBlank size={18} className="text-slate-600" />
+          <CalendarBlank size={18} className="text-[#1E88E5]  " />
         </button>
         <button
           className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 hover:bg-slate-50"
           title="Email"
         >
-          <EnvelopeSimple size={18} className="text-slate-600" />
+          <EnvelopeSimple size={18} className="text-[#1E88E5]" />
         </button>
         <button
           className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 hover:bg-slate-50"
           title="WhatsApp"
+          onClick={() => window.open("https://wa.me/" + lead.phone, "_blank")}
         >
-          <WhatsappLogo size={18} className="text-slate-600" />
+          <WhatsappLogo size={18} className="text-[#1E88E5]" />
         </button>
       </div>
 
       {/* ações rápidas: mover ou deletar */}
       <div className="mt-3 flex flex-wrap gap-2">
-        {STAGES.filter((s) => s.key !== lead.stage).map((s) => (
+        {/* {STAGES.filter((s) => s.key !== lead.stage).map((s) => (
           <button
             key={s.key}
             onClick={() => onMove(lead.id, s.key)}
@@ -95,23 +134,15 @@ function LeadCard({ lead, onMove, onDelete }) {
           >
             → {s.label}
           </button>
-        ))}
-        <button
-          onClick={() => onDelete(lead.id)}
-          className="text-xs text-red-500 hover:underline"
-        >
-          Excluir
-        </button>
+        ))} */}
       </div>
     </div>
   );
 }
-
 export default function CRMPage() {
   const [leads, setLeads] = useState([]);
   const [userName, setUserName] = useState("");
   const [search, setSearch] = useState("");
-  const [form, setForm] = useState({ name: "", origin: "", value: "" });
 
   async function refresh() {
     const data = await listLeads();
@@ -139,219 +170,151 @@ export default function CRMPage() {
     return by;
   }, [leads, search]);
 
-  async function handleCreate(e) {
-    e.preventDefault();
-    await createLead({
-      name: form.name,
-      origin: form.origin,
-      value: form.value ? Number(form.value) : null,
-    });
-    setForm({ name: "", origin: "", value: "" });
-    await refresh();
-  }
-
   return (
-    <div className="min-h-screen bg-[#F7F8FA] text-slate-900">
-      <div className="mx-auto grid max-w-[1400px] grid-cols-[260px_1fr] gap-6 px-4 py-6">
-        <aside className="h-[calc(100vh-48px)] sticky top-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-6 px-2 text-2xl font-extrabold tracking-tight text-[#2A6CF6]">
-            Nex <span className="text-slate-800">Tools</span>
-          </div>
-
-          <div className="relative mb-5">
-            <MagnifyingGlass
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Pesquisar…"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none placeholder:text-slate-400 focus:bg-white"
-            />
-          </div>
-
-          <nav className="space-y-1 text-sm">
-            {["Dashboard", "CRM"].map((item, idx) => (
-              <a
-                key={item}
-                className={`flex items-center justify-between rounded-lg px-3 py-2 ${
-                  item === "CRM"
-                    ? "bg-blue-50 font-medium text-blue-700"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
-                href="#"
-              >
-                <span className="truncate">{item}</span>
-                {item === "CRM" && (
-                  <span className="ml-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-600 px-2 text-xs font-semibold text-white">
-                    {leads.length}
-                  </span>
-                )}
-              </a>
-            ))}
-
-            <div className="mt-6 text-xs font-semibold uppercase text-slate-400">
-              Configurações
+    <DndProvider backend={HTML5Backend}>
+      <div className="min-h-screen bg-[#F7F8FA] text-slate-900">
+        <div className="mx-auto grid max-w-[1400px] grid-cols-[260px_1fr] gap-6 px-4 py-6">
+          <aside className="h-[calc(100vh-48px)] sticky top-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-6 px-2 text-2xl font-extrabold tracking-tight text-[#2A6CF6]">
+              Nex <span className="text-slate-800">Tools</span>
             </div>
-            {["Editor DRE/KPIs", "Usuários"].map((i) => (
-              <a
-                key={i}
-                className="mt-1 block rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-50"
-                href="#"
-              >
-                {i}
-              </a>
-            ))}
-          </nav>
 
-          <Client nome={userName} />
-        </aside>
-
-        <main className="space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-[22px] font-semibold">
-                CRM & Pipeline de Vendas
-              </h1>
-              <p className="text-sm text-slate-500">
-                Gestão completa de leads, oportunidades e funil de vendas
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                Nova oportunidade
-              </button>
-              <LeadButton />
-            </div>
-          </div>
-
-          {/* Métricas */}
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <MetricCard
-              icon={ChartLineUp}
-              title="Pipeline Ponderado"
-              subtitle="Valor x Probabilidade"
-              value="R$ 142.000"
-            />
-            <MetricCard
-              icon={Wallet}
-              title="Pipeline Total"
-              subtitle="Valor total das oportunidades"
-              value="R$ 250K"
-            />
-            <MetricCard
-              icon={Wallet}
-              title="Ticket médio"
-              subtitle="Valor médio por oportunidade"
-              value="R$ 83K"
-            />
-            <MetricCard
-              icon={Funnel}
-              title="Oportunidades ativas"
-              subtitle="Em negociação"
-              value="03"
-            />
-          </section>
-
-          <section className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-            {[
-              { label: "Todos os vendedores" },
-              { label: "Todas as origens" },
-              { label: "Últimos 30 dias" },
-            ].map((f) => (
-              <button
-                key={f.label}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                {f.label} <CaretDown size={14} />
-              </button>
-            ))}
-
-            <div className="ml-auto flex items-center gap-2">
-              <button className="rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white">
-                Funil de Prospecção
-              </button>
-              <button className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100">
-                Funil de Expansão
-              </button>
-            </div>
-          </section>
-
-          <form
-            onSubmit={handleCreate}
-            className="flex flex-wrap items-end gap-2 rounded-xl border border-dashed border-slate-300 bg-white p-3"
-          >
-            <div className="flex flex-col">
-              <label className="text-xs text-slate-500">Nome</label>
+            <div className="relative mb-5">
+              <MagnifyingGlass
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
               <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Pesquisar…"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none placeholder:text-slate-400 focus:bg-white"
               />
             </div>
-            <div className="flex flex-col">
-              <label className="text-xs text-slate-500">Origem</label>
-              <input
-                value={form.origin}
-                onChange={(e) => setForm({ ...form, origin: e.target.value })}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-xs text-slate-500">Valor (R$)</label>
-              <input
-                type="number"
-                value={form.value}
-                onChange={(e) => setForm({ ...form, value: e.target.value })}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-            <button className="ml-auto rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-              Adicionar lead
-            </button>
-          </form>
 
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-            {STAGES.map((col) => (
-              <div
-                key={col.key}
-                className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
-              >
-                <div
-                  className={`mb-3 border-b-2 ${col.color} pb-2 text-sm font-semibold text-slate-700`}
+            <nav className="space-y-1 text-sm">
+              {["Dashboard", "CRM"].map((item, idx) => (
+                <a
+                  key={item}
+                  className={`flex items-center justify-between rounded-lg px-3 py-2 ${
+                    item === "CRM"
+                      ? "bg-blue-50 font-medium text-blue-700"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                  href="#"
                 >
-                  {col.label}
-                </div>
-
-                <div className="space-y-3">
-                  {(grouped[col.key] || []).map((lead) => (
-                    <LeadCard
-                      key={lead.id}
-                      lead={lead}
-                      onMove={async (id, stage) => {
-                        await moveLead(id, stage);
-                        await refresh();
-                      }}
-                      onDelete={async (id) => {
-                        await deleteLead(id);
-                        await refresh();
-                      }}
-                    />
-                  ))}
-
-                  {grouped[col.key]?.length === 0 && (
-                    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-xs text-slate-400">
-                      Sem cards
-                    </div>
+                  <span className="truncate">{item}</span>
+                  {item === "CRM" && (
+                    <span className="ml-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-600 px-2 text-xs font-semibold text-white">
+                      {leads.length}
+                    </span>
                   )}
-                </div>
+                </a>
+              ))}
+
+              <div className="mt-6 text-xs font-semibold uppercase text-slate-400">
+                Configurações
               </div>
-            ))}
-          </section>
-        </main>
+              {["Editor DRE/KPIs", "Usuários"].map((i) => (
+                <a
+                  key={i}
+                  className="mt-1 block rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-50"
+                  href="#"
+                >
+                  {i}
+                </a>
+              ))}
+            </nav>
+
+            <Client nome={userName} />
+          </aside>
+
+          <main className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h1 className="text-[22px] font-semibold">
+                  CRM & Pipeline de Vendas
+                </h1>
+                <p className="text-sm text-slate-500">
+                  Gestão completa de leads, oportunidades e funil de vendas
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                  Nova oportunidade
+                </button>
+                <LeadButton />
+              </div>
+            </div>
+
+            {/* Métricas */}
+            <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <MetricCard
+                icon={ChartLineUp}
+                title="Pipeline Ponderado"
+                subtitle="Valor x Probabilidade"
+                value="R$ 142.000"
+              />
+              <MetricCard
+                icon={Wallet}
+                title="Pipeline Total"
+                subtitle="Valor total das oportunidades"
+                value="R$ 250K"
+              />
+              <MetricCard
+                icon={Wallet}
+                title="Ticket médio"
+                subtitle="Valor médio por oportunidade"
+                value="R$ 83K"
+              />
+              <MetricCard
+                icon={Funnel}
+                title="Oportunidades ativas"
+                subtitle="Em negociação"
+                value="03"
+              />
+            </section>
+            <div className="space-y-6 h-[655px]">
+              <section className="h-[70px] flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm ">
+                {[
+                  { label: "Todos os vendedores" },
+                  { label: "Todas as origens" },
+                  { label: "Últimos 30 dias" },
+                ].map((f) => (
+                  <button
+                    key={f.label}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    {f.label} <CaretDown size={14} />
+                  </button>
+                ))}
+
+                <div className="ml-auto flex items-center gap-2">
+                  <button className="rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white">
+                    Funil de Prospecção
+                  </button>
+                  <button className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100">
+                    Funil de Expansão
+                  </button>
+                </div>
+              </section>
+
+              <section className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+                {STAGES.map((col) => (
+                  <StageColumn
+                    key={col.key}
+                    col={col}
+                    leads={grouped[col.key]}
+                    moveLead={moveLead}
+                    refresh={refresh}
+                    deleteLead={deleteLead}
+                  />
+                ))}
+              </section>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </DndProvider>
   );
 }
