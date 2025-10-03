@@ -29,10 +29,10 @@ export function SubmitButtons() {
   );
 }
 
-export default function LeadButton() {
+export default function LeadButton( { windowTitle, data = null }) {
   return (
     <Dialog>
-      <LeadForm />
+      <LeadForm title ={ windowTitle } data ={ data }/>
     </Dialog>
   );
 }

@@ -33,6 +33,7 @@ enum Stage {
   ANALISE_MQL
   SQL
   REUNIAO
+  EXCLUIDO
 }
 
 /**
