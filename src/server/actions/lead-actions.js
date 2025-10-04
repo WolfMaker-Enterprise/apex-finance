@@ -42,38 +42,45 @@ export async function listLeads() {
  * - ou um FormData direto do <form action={createLead}>
  */
 export async function createLead(payload) {
-  // Suporta FormData ou objeto plano
-  const get = (k) =>
-    payload instanceof FormData ? payload.get(k) : payload?.[k];
+  // Transforma FormData ou objeto simples em objeto plano
+  const data =
+    payload instanceof FormData
+      ? Object.fromEntries(payload.entries())
+      : payload ?? {};
 
-  const data = {
-    name: String(get("name") || "").trim(),
-    company: opt(get("company")),
-    email: opt(get("email")?.toLowerCase()),
-    phone: opt(get("phone")),
-    jobTitle: opt(get("jobTitle")),
-    origin: opt(get("origin")),
-    score: toInt(get("score")),
-    notes: opt(get("notes")),
-    value: toDecimal(get("value")),
-    ownerId: toInt(get("ownerId")),
-    stage: stageOrDefault(get("stage")), // default LEAD
+  console.log("Dados recebidos:", data);
+
+const leadData = {
+    name: String(data.name || "").trim(),
+    company: opt(data.company),
+    email: opt(data.email?.toLowerCase()),
+    phone: opt(data.phone),
+    jobTitle: opt(data.jobTitle),
+    origin: opt(data.origin),
+    score: toInt(data.score),
+    notes: opt(data.notes),
+    value: toDecimal(data.value),
+    ownerId: toInt(data.ownerId),
+    stage: stageOrDefault(data.stage), // Default: LEAD
   };
 
-  if (!data.name) return { ok: false, error: "Nome é obrigatório." };
+  const id = toInt(data.id); // pode vir como string do formulário
 
-  if (data.ownerId) {
-    const userExists = await prisma.user.findUnique({
-      where: { id: data.ownerId },
+  let result;
+
+  if (id) {
+    // Faz UPDATE se o ID for válido
+    result = await prisma.lead.update({
+      where: { id },
+      data: leadData,
     });
-
-    if (!userExists) {
-      return { ok: false, error: "Vendedor selecionado não existe." };
+    // console.log("Lead atualizado:", result);
+    } else {
+    // Faz CREATE se não houver ID
+      result = await prisma.lead.create({ data: leadData });
+      // console.log("Lead criado:", result);
     }
-  }
-
-  const lead = await prisma.lead.create({ data });
-  return { ok: true, lead };
+  return { ok: true, leadData };
 }
 
 function serializeLead(lead) {
@@ -105,7 +112,10 @@ export async function moveLead(leadId, nextStage) {
 }
 
 export async function deleteLead(leadId) {
-  return prisma.lead.delete({ where: { id: Number(leadId) } });
+  return prisma.lead.update({
+    where: { id: Number(leadId) },
+    data: { stage: Stage.EXCLUIDO },
+  });
 }
 
 export async function updateLead(leadId, partial = {}) {

@@ -75,23 +75,24 @@ export function LeadCard({ lead, onDelete }) {
       style={{ cursor: "move" }}
     >
       <div className=" mb-2 flex items-start justify-between">
-        <div className="font-medium text-[15px] text-slate-800">
+        <div className="font-medium text-[15px] text-slate-800" >
           {(() => {
             const parts = lead.name.trim().split(" ");
             return parts.length > 1
-              ? `${parts[0]} ${parts[parts.length - 1]}`
-              : parts[0];
+               ? lead.id+". "+`${parts[0]} ${parts[parts.length - 1]}`
+              : lead.id+". "+parts[0];
           })()}
-                  
         </div>
-        <button
+        {/* <button
           className="text-slate-400 hover:text-slate-600"
           onClick={() => {
-            alert(`Ações para o lead: ${lead.name}`);
+            alert(`Ações para o lead: ${lead}`);
+            console.log(lead)
           }}
         >
-          <DotsThree size={18} weight="bold" />
-        </button>
+          <DotsThree size={18} weight="bold" /> */}
+        <LeadButton windowTitle="Editar lead" data={lead}/>
+        {/* </button> */}
       </div>
 
       <div className="mb-3 text-xs text-slate-500">
@@ -135,6 +136,12 @@ export function LeadCard({ lead, onDelete }) {
             → {s.label}
           </button>
         ))} */}
+        <button
+          onClick={() => onDelete(lead.id)}
+          className="text-xs text-red-500 hover:underline"
+          >
+          Excluir
+        </button>
       </div>
     </div>
   );
@@ -243,7 +250,7 @@ export default function CRMPage() {
                 <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                   Nova oportunidade
                 </button>
-                <LeadButton />
+                <LeadButton windowTitle="Novo Lead"/>
               </div>
             </div>
 

@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { createLead } from "@/server/actions/lead-actions";
 import { useFormStatus } from "react-dom";
 
-function SubmitButtons() {
+/* function SubmitButtons() { nao esta sendo utilizado
   const { pending } = useFormStatus();
   return (
     <>
@@ -31,7 +31,7 @@ function SubmitButtons() {
       </Button>
     </>
   );
-}
+} */
 
 export default function OportunitButton() {
   return (
